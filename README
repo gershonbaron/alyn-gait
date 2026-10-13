@@ -1,0 +1,200 @@
+Alyn Hospital
+Gait Visualization System
+Architecture
+
+Introduction
+There is a need for developing a video system which will help mechanotherapists to analyze the gait of young patients in Alyn Children Rehabilitation hospital.
+The Gait Visualization System is a video system based on multiple cameras, to be used in a dedicated room. The patient is instructed to walk a few meters in the room, while a set of synchronized cameras records his motion through the room. The resulting video clips are then simultaneously displayed on a common computer screen, so the mechanotherapists can review and diagnose the details of the patient's body movements.
+General Architecture
+The proposed system consists of at least three video cameras (shutter visual sensors). Two of the cameras are lateral, one is frontal. Each camera is controlled by a single-board computer (SBC) RaspberryPi 4. Each camera records a single video stream and stores it in local storage of the corresponding SBC. The cameras are interconnected through a standard Ethernet network. A dedicated PC reads the video streams and displays them contiguously on screen.
+See the diagram below:
+ 
+Functionality
+There are 4 functionality modes.
+1.	Setup Mode
+In this mode, the Master Pc is used to develop and upload software into the RaspberryPi SBCs. The communication is through standard tools such as RealVNC for remote control and FileZilla for file upload/download.
+2.	Initialization Mode
+In Initialization mode, the cameras are activated and the resulting video streams are forwarded in real time to the Master PC and displayed on the screen. This allows physical alignment of the cameras to the correct position and tilt, pan.
+3.	Recording Mode
+In Recording mode, the Master PC sends a command to the SBCs, consisting of start time and duration of the recording (assuming SBCs and Master PC are synchronized using RTP). Following the command, the cameras are simultaneously activated, and the resulting video streams are stored into local memory (SD card, or SSD). Another command can be used to stop recording.
+4.	Analyze mode
+In Analyze mode, the recorded streams are uploaded to the Master PC for analysis. This can be done through storage sharing between the SBCs and Master Pc.
+5.	Setup
+5.1	OS
+Install OS on SD card to obtain:
+PRETTY_NAME="Debian GNU/Linux 13 (trixie)"
+NAME="Debian GNU/Linux"
+VERSION_ID="13"
+VERSION="13 (trixie)"
+Then upgrade all:
+sudo apt upgrade
+
+Have one user:
+Username: alyn
+Password: alyn
+5.2	SMB
+Note: samba is not reliable. We use ssh instead.
+Install Samba:
+sudo apt install samba samba-common-bin -y
+
+make a shared directory:
+mkdir videos
+
+modify /etc/samba/smb.conf, by adding at the end:
+[videos]
+comment = Raspberry Pi Shared Folder
+path = /home/alyn/videos
+browseable = yes
+writeable = yes
+only guest = no
+create mask = 0777
+directory mask = 0777
+public = no
+valid users = alyn
+force user = alyn
+
+then
+
+sudo smbpasswd -a alyn
+sudo systemctl restart smbd
+sudo systemctl status smbd
+
+Note:
+On PC, login to each rpi in Windows browser, by login to:
+\\192.168.50.11(/12/13/14)\videos: user – alyn, password: alyn, and keep login got later use.
+5.3	LAN setting
+
+
+Use Tftpd64 tool to set DHCP as follows (FIXME)
+ 
+
+5.4	RPI configuration
+
+
+Disable WAN and enable ethernet as follows:
+Assign fixed and known IP to each Raspberry Pi ethernet:
+sudo nmtui
+Edit a connection
+→ Wired connection 1	
+IPv4 CONFIGURATION
+→ Manual
+Field	Value
+Address	192.168.50.11(or 12 or 13 or 14 respectively)/24
+Gateway	empty
+Optional DNS:
+8.8.8.8
+Then on PC:
+Login to each rpi in Windows browser, by login to:
+\\192.168.50.11(/12/13/14)\videos: user – alyn, password: alyn, and keep login got later use.
+
+5.5 Raspberry Pi Synchronization
+Install chrony on rpi:
+sudo apt install chrony -y
+sudo nano /etc/chrony/chrony.conf
+Add near top:
+server 192.168.50.1 iburst
+Enable NTP server on PC:
+On PowerShell:
+Set-Service w32time -StartupType Automatic
+Start-Service w32time
+On Admin CMD:
+reg add HKLM\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders\NtpServer /v Enabled /t REG_DWORD /d 1 /f
+reg add HKLM\SYSTEM\CurrentControlSet\Services\W32Time\Config /v AnnounceFlags /t REG_DWORD /d 5 /f
+on PowerShell:
+New-NetFirewallRule -DisplayName "NTP Server UDP 123" -Direction Inbound -Protocol UDP -LocalPort 123 -Action Allow -Profile Private
+On admin CMD:
+Restart-Service w32time
+w32tm /resync
+Install ffmpeg in PC
+Winget install ffmpeg
+Automatic Rpi start
+Create a service named gait-video:
+sudo nano /etc/systemd/system/gait-video.service
+
+The content of the file is:
+[Unit]
+Description=gait camera Service
+After=network.target
+[Service]
+ExecStart=/usr/bin/python3 /home/alyn/gait/capture_StreamVideo.py
+WorkingDirectory=/home/alyn/gait
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User=alyn
+[Install]
+WantedBy=multi-user.target
+Then run:
+sudo systemctl daemon-reload
+sudo systemctl enable gait-video.service
+sudo systemctl start gait-video.service
+SSH initialization
+On Windows
+Generate a key:
+ssh-keygen
+Press Enter for all prompts.
+This creates:
+C:\Users\<username>\.ssh\id_rsa
+C:\Users\<username>\.ssh\id_rsa.pub
+(or id_ed25519 on newer systems)
+Copy the public key to the Pi
+Run:
+ssh-copy-id alyn@192.168.1.101
+If ssh-copy-id isn't available on Windows:
+type $env:USERPROFILE\.ssh\id_ed25519.pub
+Copy the contents.
+Then on the Pi:
+mkdir -p ~/.ssh
+nano ~/.ssh/authorized_keys
+Paste the key and save.
+Set permissions:
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/authorized_keys
+Now test:
+ssh alyn@192.168.1.101
+You should log in without a password.
+Then:
+scp alyn@192.168.1.101:/home/alyn/videos/video.mp4 .
+will also work without a password.
+You can use the same key pair for all of your Raspberry Pis, and that's actually the most common approach.
+Recommended setup
+On your Windows PC:
+ssh-keygen -t ed25519
+This creates:
+C:\Users\<your_user>\.ssh\id_ed25519
+C:\Users\<your_user>\.ssh\id_ed25519.pub
+Then copy the same public key (id_ed25519.pub) into:
+/home/alyn/.ssh/authorized_keys
+on each Raspberry Pi.
+Result:
+Windows PC
+    │
+    ├── SSH key
+    │
+    ├── RPi #1
+    ├── RPi #2
+    ├── RPi #3
+    └── RPi #4
+One key can authenticate to all of them.
+4. Check SSH server config on Pi
+sudo grep -E "PubkeyAuthentication|AuthorizedKeysFile|PasswordAuthentication" /etc/ssh/sshd_config
+You want at least:
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+Then restart SSH:
+sudo systemctl restart ssh
+Most common fix:
+chmod 700 /home/alyn/.ssh
+chmod 600 /home/alyn/.ssh/authorized_keys
+chown -R alyn:alyn /home/alyn/.ssh
+Improvements
+1.	Guidance for users: כיול, גובה המצלמות, זווית, פוקוס, זום 
+2.	סווג של סרטונים עם מס' תיק, תאריך, מצב מתועד
+3.	Start/stop for capture
+4.	Automatic display
+5.	Serial number per file
+6.	Folder for date, subfolder for file number
+7.	FPS = 50
+Notes
+1.	Rpi1 is replaced by rpi5
+2.	NTP source of rpi5 is rpi4, not PC. 

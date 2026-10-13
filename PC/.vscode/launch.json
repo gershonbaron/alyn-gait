@@ -1,0 +1,25 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        
+        {
+            "name": "display_video2",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "display_video2.py",
+            "console": "integratedTerminal",
+            "python": "C:/Users/gersh/AppData/Local/Programs/Python/Python312/python.exe"
+        },
+        {
+            "name": "get_stream_capture_from_multiple_rpis",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "get_stream_capture_from_multiple_rpis.py",
+            "console": "integratedTerminal",
+            "python": "C:/Users/gersh/AppData/Local/Programs/Python/Python312/python.exe"
+        }
+    ]
+}

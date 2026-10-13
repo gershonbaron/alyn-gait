@@ -1,0 +1,10 @@
+/PC/*.json
+/PC/video/
+__pycache__
+/PC/old/
+rpi/gait*
+rpi/.vscode
+./video
+*.mp4
+*.h264
+
