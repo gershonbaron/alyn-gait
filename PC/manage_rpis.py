@@ -1,6 +1,7 @@
 # manage_rpis
 
 import json
+from sync_rpis_ssh import sync_pi
 
 def manage_rpis(data):
     while True:
@@ -19,6 +20,11 @@ def manage_rpis(data):
                 with open('./rpi_config.json', 'w') as file:
                     json.dump(data, file, indent=4)
                 print(f"Added {new_rpi} with IP {new_ip}.")
+                # synchronizing new rpi
+                HOST = f"alyn@{new_ip}"
+                print (f"synchronizing {HOST}")
+                sync_pi(HOST)
+                
         elif action == "2":
             remove_rpi = input("Enter RPI name to remove: ")
             if remove_rpi in data["rpi_active"]:

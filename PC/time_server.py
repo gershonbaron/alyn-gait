@@ -13,7 +13,8 @@ import socket
 import struct
 import time
 
-HOST = "192.168.50.1"
+#HOST = "192.168.50.1"
+HOST = "0.0.0.0"
 PORT = 5005
 
 with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:

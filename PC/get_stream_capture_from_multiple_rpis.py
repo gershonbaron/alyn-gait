@@ -30,6 +30,7 @@ import serial
 from display_video2 import display_video
 import manage_rpis
 from store import store_video
+from sync_rpis_ssh import sync_pi
 
 #import display_video2
 
@@ -483,6 +484,7 @@ def UserInterface(data, serial):
 
 
 def main():
+    
     # read configuration file
     with open('./rpi_config.json', 'r') as file:
         data = json.load(file)
@@ -493,7 +495,15 @@ def main():
     print("Active RPIs and cameras:")
     for rpi in data["rpi_active"]: 
         print(f"  {rpi} ")
-
+    
+    # sync the rpis
+    for rpi in data['rpi_active']:
+        HOST_IP = data[f"{rpi}_IP"]
+        HOST = f"alyn@{HOST_IP}"
+        print (HOST)
+        print (f"synchronizing {rpi}")
+        sync_pi(HOST)
+    
     # read the serial number from the file, this will be used to name the captured video files and will be incremented at each capture
     if not "serial.txt" in os.listdir():
         with open("serial.txt", "w") as f:
