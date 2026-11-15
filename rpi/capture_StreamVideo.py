@@ -8,8 +8,8 @@ from gpiozero import LED
 
 # ================= USER SETTINGS =================
 SAVE_DIR = "/home/alyn/videos"
-WIDTH = 1920
-HEIGHT = 1080
+WIDTH = 1456
+HEIGHT = 1088
 FPS = 50
 # =================================================
 
